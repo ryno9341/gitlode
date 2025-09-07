@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitLode - Download GitHub Directories</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.7/spacelab/bootstrap.min.css"
+      integrity="sha512-o6LgZzmSA9vluDimUYiZHs9kubw1SHOz1GCSFKrk+aklj0t//U3vGyhQE7SrWIsOMJdculv4X0SL0MDeFgTLQw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body ng-app="gitLodeApp" ng-cloak>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+          GitLode
+        </a>
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              href="https://github.com/ryno9341/gitlode"
+              target="_blank"
+              rel="noopener"
+            >
+              <i class="fab fa-github"></i>
+              Source on GitHub
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container main-content" ng-controller="MainController as ctrl">
+      <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+          <div class="card shadow-sm main-card">
+            <div class="card-header text-center">
+              <h1 class="card-title display-6">Download GitHub Directories</h1>
+              <p class="card-subtitle text-muted">
+                A precision tool for downloading specific repository folders as
+                a ZIP archive.
+              </p>
+            </div>
+            <div class="card-body p-4">
+              <form ng-submit="ctrl.startDownload()" novalidate>
+                <div class="mb-3">
+                  <label for="repoUrl" class="form-label">
+                    GitHub Repository or Directory URL
+                  </label>
+                  <input
+                    type="url"
+                    id="repoUrl"
+                    class="form-control form-control-lg"
+                    ng-model="ctrl.repoUrl"
+                    placeholder="e.g., https://github.com/vercel/next.js/tree/canary/examples/basic-css"
+                    required
+                    autofocus
+                  />
+                </div>
+                <div class="mb-4">
+                  <a
+                    class="text-decoration-none"
+                    data-bs-toggle="collapse"
+                    href="#tokenCollapse"
+                    role="button"
+                    aria-expanded="false"
+                    aria-controls="tokenCollapse"
+                  >
+                    <i class="fa-solid fa-key me-1"></i>
+                    Use GitHub Token (optional)
+                  </a>
+                  <div class="collapse" id="tokenCollapse">
+                    <div class="token-info">
+                      <p class="mb-2">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        A token increases your API request limit and is saved in
+                        your browser for future use.
+                      </p>
+                      <div class="input-group">
+                        <input
+                          type="password"
+                          class="form-control"
+                          ng-model="ctrl.githubToken"
+                          placeholder="Paste your Personal Access Token"
+                        />
+                        <a
+                          href="https://github.com/settings/tokens/new?description=GitLode&scopes=repo"
+                          target="_blank"
+                          rel="noopener"
+                          class="btn btn-outline-secondary"
+                          title="Generate new token"
+                        >
+                          <i class="fab fa-github"></i>
+                          Generate
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-grid">
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-lg"
+                    ng-disabled="!ctrl.repoUrl || ctrl.isLoading"
+                  >
+                    <span ng-if="!ctrl.isLoading">
+                      <i class="fa-solid fa-download me-2"></i>Download .zip
+                    </span>
+                    <span ng-if="ctrl.isLoading"
+                      ><span
+                        class="spinner-border spinner-border-sm"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Processing...</span
+                    >
+                  </button>
+                </div>
+              </form>
+
+              <div
+                ng-if="ctrl.statusMessage"
+                class="mt-4 text-center status-text"
+              >
+                <p class="mb-1">{{ ctrl.statusMessage }}</p>
+                <div
+                  class="progress"
+                  role="progressbar"
+                  aria-valuenow="{{ ctrl.progress }}"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  style="height: 5px"
+                  ng-if="ctrl.isLoading && ctrl.totalFiles > 0"
+                >
+                  <div
+                    class="progress-bar"
+                    ng-style="{ 'width': ctrl.progress + '%' }"
+                  ></div>
+                </div>
+              </div>
+
+              <div ng-if="ctrl.displayFiles.length > 0" class="mt-4">
+                <h6 class="text-muted">Download Contents:</h6>
+                <div class="file-tree-window">
+                  <div
+                    ng-repeat="item in ctrl.displayFiles track by $index"
+                    class="file-tree-entry d-flex justify-content-between align-items-center"
+                  >
+                    <span ng-style="{'padding-left': item.depth * 20 + 'px'}">
+                      <i
+                        class="fa-regular fa-fw me-2"
+                        ng-class="{'fa-folder': item.type === 'folder', 'fa-file-lines': item.type === 'file', 'icon-folder': item.type === 'folder', 'icon-file': item.type === 'file'}"
+                      ></i>
+                      {{ item.name }}
+                    </span>
+                    <span
+                      ng-if="item.type === 'file'"
+                      class="badge bg-secondary fw-normal"
+                    >
+                      {{ item.formattedSize }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div ng-if="ctrl.logMessages.length > 0" class="mt-4">
+                <h6 class="text-muted">Process Log:</h6>
+                <div class="log-window" auto-scroll>
+                  <div
+                    ng-repeat="log in ctrl.logMessages track by $index"
+                    class="log-entry"
+                    ng-class="{'text-success': log.type === 'success', 'text-danger': log.type === 'error'}"
+                  >
+                    <i
+                      class="fa-fw me-2"
+                      ng-class="{'fa-solid fa-check-circle': log.type === 'success', 'fa-solid fa-xmark-circle': log.type === 'error', 'fa-solid fa-circle-info': log.type === 'info'}"
+                    ></i>
+                    <span class="log-text">{{ log.text }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                ng-if="ctrl.errorMessage"
+                class="mt-4 alert alert-danger mb-0"
+                role="alert"
+              >
+                <strong>
+                  <i class="fa-solid fa-circle-xmark me-2"></i>
+                  Error:
+                </strong>
+                {{ ctrl.errorMessage }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center text-muted py-4 mt-auto border-top">
+      <small>
+        GitLode is a client-side tool. Your files and tokens never leave your
+        browser.
+      </small>
+    </footer>
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/angular@1.8.3/angular.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"
+      integrity="sha512-HvOjJrdwNpDbkGJIG2ZNqDlVqMo77qbs4Me4cah0HoDrfhrbA+8SBlZn1KrvAQw7cILLPFJvdwIgphzQmMm+Pw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+      integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"
+      integrity="sha512-Qlv6VSKh1gDKGoJbnyA5RMXYcvnpIqhO++MhIM2fStMcGT9i2T//tSwYFlcyoRRDcDZ+TYHpH8azBBCyhpSeqw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <!-- Angular App Files -->
+    <script src="js/app.js"></script>
+    <script src="js/services/GitHubService.js"></script>
+    <script src="js/directives/autoScroll.js"></script>
+    <script src="js/controllers/MainController.js"></script>
+  </body>
+</html>

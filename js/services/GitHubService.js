@@ -33,7 +33,6 @@
         const [owner, repo] = pathParts;
         const typeIndex = pathParts.indexOf("tree");
         if (typeIndex === -1 || typeIndex + 1 >= pathParts.length) {
-          // If no /tree/ part, we can't determine the branch, return null or handle default branch case
           return { owner, repo, refAndPath: null };
         }
 
@@ -65,16 +64,13 @@
         return $http
           .get(branchApiUrl, { headers: getApiHeaders(token) })
           .then(function () {
-            // Success! We found a valid branch.
             const path = parts.slice(partsToCheck.length).join("/");
             return { branch: branchCandidate, path: path };
           })
           .catch(function (error) {
             if (error.status === 404) {
-              // This branch name doesn't exist, try a shorter one.
               return check(partsToCheck.slice(0, -1));
             }
-            // A different error occurred (e.g., rate limit, network issue)
             return $q.reject(error);
           });
       }
